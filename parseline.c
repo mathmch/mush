@@ -4,16 +4,11 @@
 #include <strings.h>
 #include "stage.h"
 #include "util.h"
+#include "parseline.h"
 
 typedef enum { none, expecting, received } redirect_status;
 
-void parse_line(char command[]);
-void get_line(char command[]);
-void parse_stage(char *command, struct stage *stage,
-                 int current_stage, int total_stages);
-void handle_invalid_redirection(int argc, char *argv[], int is_input);
-void handle_ambiguous_input(char *argv[], int is_input);
-
+/*
 int main(int argc, char *argv[]) {
     char command[MAX_COMMAND_LENGTH*2];
     if (argc != 1) {
@@ -25,7 +20,7 @@ int main(int argc, char *argv[]) {
     parse_line(command);
     return 0;
 }
-
+*/
 void parse_line(char command[]) {
     struct stage stages[MAX_PIPES + 1];
     char *token;
