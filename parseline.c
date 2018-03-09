@@ -45,7 +45,6 @@ int parse_line(char command[], struct stage stages[]) {
         parse_stage(token, &stages[i], i, total_stages);
         token = end + 1;
     }
-    putchar('\n');
     return total_stages;
 }
 

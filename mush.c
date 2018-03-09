@@ -19,10 +19,12 @@ int main(int argc, char *argv[]){
     struct stage stages[MAX_PIPES + 1];
     char command[MAX_COMMAND_LENGTH];
     int total_stages;
-    //printf("%s", PROMPT);
-    get_line(command);
-    total_stages = parse_line(command, stages);
-    launch_pipes(total_stages, stages);
+    while (1) {
+	printf("%s", PROMPT);
+	get_line(command);
+	total_stages = parse_line(command, stages);
+	launch_pipes(total_stages, stages);
+    }
     return 0;
 }
 
@@ -67,7 +69,8 @@ void launch_pipes(int total_stages, struct stage stages[]){
 	    close(old[1]);
 	    close(next[0]);
 	    close(next[1]);
-	    telephone(i);
+	    execvp(stages[i].argv[0], stages[i].argv);
+	    perror(stages[i].argv[0]);
 	    exit(EXIT_FAILURE);  
 	}
 	else {

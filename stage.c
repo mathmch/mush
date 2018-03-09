@@ -33,6 +33,7 @@ void setup_stage(struct stage *stage, int number, char *command, char *input,
     for (i = 0; i < argc; i++) {
         stage->argv[i] = argv[i];
     }
+    stage->argv[i] = NULL;
 }
 
 void print_stage(struct stage *stage) {

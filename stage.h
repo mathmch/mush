@@ -13,7 +13,7 @@ struct stage {
     char input[INPUT_MAX];
     char output[OUTPUT_MAX];
     int argc;
-    char *argv[MAX_ARGUMENTS];
+    char *argv[MAX_ARGUMENTS + 1];
 };
 
 void setup_stage(struct stage *stage, int number, char *command, char *input,
