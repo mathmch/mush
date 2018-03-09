@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <signals.h>
 #include "util.h"
 #include "stage.h"
 #include "parseline.h"
@@ -22,8 +23,13 @@ int main(int argc, char *argv[]){
     while (1) {
 	printf("%s", PROMPT);
 	get_line(command);
+	if (command[0] == '\n')
+	    continue;
 	total_stages = parse_line(command, stages);
-	launch_pipes(total_stages, stages);
+	if (total_stages == -1)
+	    continue;
+	else
+	    launch_pipes(total_stages, stages);
     }
     return 0;
 }
@@ -34,7 +40,7 @@ void setup_env(){
 }
 
 void sigint_handler(int signum){
-    /* do nothing, just keep mush from dying on SIGINT */
+    
 }
 
 void change_directory(char *path){

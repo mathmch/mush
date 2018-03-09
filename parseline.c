@@ -31,7 +31,7 @@ int parse_line(char command[], struct stage stages[]) {
 
     if (total_stages > MAX_PIPES + 1) {
         fprintf(stderr, "pipeline too deep\n");
-        exit(EXIT_FAILURE);
+        return -1;
     }
 
     token = command;
@@ -40,7 +40,7 @@ int parse_line(char command[], struct stage stages[]) {
         *end = '\0';
         if (strcmp(token, " ") == 0 || *token == '\0') {
             fprintf(stderr, "invalid null command\n");
-            exit(EXIT_FAILURE);
+            return -1;
         }
         parse_stage(token, &stages[i], i, total_stages);
         token = end + 1;
@@ -50,7 +50,7 @@ int parse_line(char command[], struct stage stages[]) {
 
 void get_line(char command[]) {
     if (fgets(command, MAX_COMMAND_LENGTH*2, stdin) == NULL) {
-        perror("Read Command");
+	putchar('\n');
         exit(EXIT_FAILURE);
     }
     if (strlen(command) > MAX_COMMAND_LENGTH) {
