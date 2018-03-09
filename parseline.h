@@ -3,7 +3,7 @@
 
 
 
-void parse_line(char command[]);
+int parse_line(char command[], struct stage stages[]);
 void get_line(char command[]);
 void parse_stage(char *command, struct stage *stage,
                  int current_stage, int total_stages);

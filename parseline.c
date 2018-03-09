@@ -21,8 +21,7 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 */
-void parse_line(char command[]) {
-    struct stage stages[MAX_PIPES + 1];
+int parse_line(char command[], struct stage stages[]) {
     char *token;
     int total_stages;
     int i;
@@ -47,9 +46,7 @@ void parse_line(char command[]) {
         token = end + 1;
     }
     putchar('\n');
-
-    for (i = 0; i < total_stages; i++)
-        print_stage(&stages[i]);
+    return total_stages;
 }
 
 void get_line(char command[]) {
