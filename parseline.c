@@ -2,25 +2,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#include <errno.h>
 #include "stage.h"
 #include "util.h"
 #include "parseline.h"
 
 typedef enum { none, expecting, received } redirect_status;
 
-/*
-int main(int argc, char *argv[]) {
-    char command[MAX_COMMAND_LENGTH*2];
-    if (argc != 1) {
-        fprintf(stderr, "usage: parseline\n");
-        exit(EXIT_FAILURE);
-    }
-    printf("line: ");
-    get_line(command);
-    parse_line(command);
-    return 0;
-}
-*/
 int parse_line(char command[], struct stage stages[]) {
     char *token;
     int total_stages;
@@ -49,9 +37,17 @@ int parse_line(char command[], struct stage stages[]) {
 }
 
 void get_line(char command[]) {
-    if (fgets(command, MAX_COMMAND_LENGTH*2, stdin) == NULL) {
-	putchar('\n');
-        exit(EXIT_FAILURE);
+    #define SUCCESS 0
+    errno = SUCCESS;
+    while (fgets(command, MAX_COMMAND_LENGTH*2, stdin) == NULL) {
+	if (errno == SUCCESS){
+	    printf("^D\n");
+	    exit(EXIT_SUCCESS);
+	}
+        if (errno != EINTR) {
+	    perror("fgets");
+	    exit(EXIT_FAILURE);
+	}	
     }
     if (strlen(command) > MAX_COMMAND_LENGTH) {
         fprintf(stderr, "command too long\n");

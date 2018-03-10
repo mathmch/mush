@@ -3,13 +3,13 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <signals.h>
+#include <signal.h>
 #include "util.h"
 #include "stage.h"
 #include "parseline.h"
 
 #define PROMPT "8-P "
-
+/* TODO: Deal with ^D ^D */
 void setup_env();
 void sigint_handler(int signum);
 void change_directory(char *path);
@@ -20,6 +20,7 @@ int main(int argc, char *argv[]){
     struct stage stages[MAX_PIPES + 1];
     char command[MAX_COMMAND_LENGTH];
     int total_stages;
+    setup_env();
     while (1) {
 	printf("%s", PROMPT);
 	get_line(command);
@@ -36,11 +37,15 @@ int main(int argc, char *argv[]){
 
 /* set up the environment for the shell to run in */
 void setup_env(){
-
+    struct sigaction sa;
+    sa.sa_handler = sigint_handler;
+    sa.sa_flags = 0;
+    sigemptyset(&sa.sa_mask);
+    sigaction(SIGINT, &sa, NULL);
 }
 
 void sigint_handler(int signum){
-    
+    printf("\n%s", PROMPT);
 }
 
 void change_directory(char *path){
@@ -54,12 +59,18 @@ void telephone(int id){
 	putchar(c);
     printf("This is process %d\n", id);
 }
+
 void launch_pipes(int total_stages, struct stage stages[]){
     #define READ 0
     #define WRITE 1
+    sigset_t new_set, old_set;
     int old[2], next[2];
     pid_t child;
     int i;
+    sigemptyset(&new_set);
+    sigaddset(&new_set, SIGINT);
+    if (sigprocmask(SIG_BLOCK, &new_set, &old_set) < 0)
+	perror("Sigmask");
     if (pipe(old) < 0) {
 	perror("Pipe");
 	exit(EXIT_FAILURE);
@@ -75,6 +86,8 @@ void launch_pipes(int total_stages, struct stage stages[]){
 	    close(old[1]);
 	    close(next[0]);
 	    close(next[1]);
+	    if (sigprocmask(SIG_SETMASK, &old_set, NULL))
+		perror("Sigunset");
 	    execvp(stages[i].argv[0], stages[i].argv);
 	    perror(stages[i].argv[0]);
 	    exit(EXIT_FAILURE);  
@@ -86,7 +99,8 @@ void launch_pipes(int total_stages, struct stage stages[]){
 	    old[1] = next[1];
 	}
     }
+    if (sigprocmask(SIG_SETMASK, &old_set, NULL))
+	perror("Sigunset");
     while (total_stages--)
 	wait(NULL);
-
 }
