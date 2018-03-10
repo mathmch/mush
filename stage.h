@@ -11,7 +11,9 @@ struct stage {
     int number;
     char command[MAX_COMMAND_LENGTH];
     char input[INPUT_MAX];
+    int has_input_redirection; /* bool */
     char output[OUTPUT_MAX];
+    int has_output_redirection; /* bool */
     int argc;
     char *argv[MAX_ARGUMENTS + 1];
 };

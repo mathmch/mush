@@ -40,14 +40,14 @@ void get_line(char command[]) {
     #define SUCCESS 0
     errno = SUCCESS;
     while (fgets(command, MAX_COMMAND_LENGTH*2, stdin) == NULL) {
-	if (errno == SUCCESS){
-	    printf("^D\n");
-	    exit(EXIT_SUCCESS);
-	}
+        if (errno == SUCCESS){
+            printf("^D\n");
+            exit(EXIT_SUCCESS);
+        }
         if (errno != EINTR) {
-	    perror("fgets");
-	    exit(EXIT_FAILURE);
-	}	
+            perror("fgets");
+            exit(EXIT_FAILURE);
+        }	
     }
     if (strlen(command) > MAX_COMMAND_LENGTH) {
         fprintf(stderr, "command too long\n");

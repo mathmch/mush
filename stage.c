@@ -11,22 +11,28 @@ void setup_stage(struct stage *stage, int number, char *command, char *input,
 
     if (*input != '\0') {
         strcpy(stage->input, input);
+        stage->has_input_redirection = 1;
     } else if (number == 0) {
         strcpy(stage->input, "original stdin");
+        stage->has_input_redirection = 0;
     } else {
         char formatted[INPUT_MAX];
         sprintf(formatted, "pipe from stage %d", number - 1);
         strcpy(stage->input, formatted);
+        stage->has_input_redirection = 0;
     }
 
     if (*output != '\0') {
         strcpy(stage->output, output);
+        stage->has_output_redirection = 1;
     } else if (number == total_stages - 1) {
         strcpy(stage->output, "original stdout");
+        stage->has_output_redirection = 0;
     } else {
         char formatted[OUTPUT_MAX];
         sprintf(formatted, "pipe to stage %d", number + 1);
         strcpy(stage->output, formatted);
+        stage->has_output_redirection = 0;
     }
 
     stage ->argc = argc;

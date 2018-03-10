@@ -2,6 +2,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
 #include <sys/wait.h>
 #include <signal.h>
 #include <string.h>
@@ -11,7 +14,7 @@
 
 #define PROMPT "8-P "
 /* TODO: Deal with ^D ^D */
-void setup_env();
+void setup_env(void);
 void sigint_handler(int signum);
 void change_directory(char *path);
 void launch_pipes(int total_stages, struct stage stages[]);
@@ -23,16 +26,16 @@ int main(int argc, char *argv[]){
     int total_stages;
     setup_env();
     while (1) {
-	printf("%s", PROMPT);
-	get_line(command);
-	if (command[0] == '\n')
-	    continue;
-	total_stages = parse_line(command, stages);
-	
-	if (total_stages == -1)
-	    continue;
-	else
-	    launch_pipes(total_stages, stages);
+        printf("%s", PROMPT);
+        get_line(command);
+        if (command[0] == '\n')
+            continue;
+        total_stages = parse_line(command, stages);
+
+        if (total_stages == -1)
+            continue;
+        else
+            launch_pipes(total_stages, stages);
     }
     return 0;
 }
@@ -52,13 +55,13 @@ void sigint_handler(int signum){
 
 void change_directory(char *path){
     if (chdir(path) < 0)
-	perror(path);
+        perror(path);
 }
 
 void telephone(int id){
     int c;
     while (EOF != (c = getchar()))
-	putchar(c);
+        putchar(c);
     printf("This is process %d\n", id);
 }
 
@@ -73,51 +76,73 @@ void launch_pipes(int total_stages, struct stage stages[]){
     sigemptyset(&new_set);
     sigaddset(&new_set, SIGINT);
     if (sigprocmask(SIG_BLOCK, &new_set, &old_set) < 0)
-	perror("Sigmask");
+        perror("Sigmask");
     if (pipe(old) < 0) {
-	perror("Pipe");
-	exit(EXIT_FAILURE);
+        perror("Pipe");
+        exit(EXIT_FAILURE);
     }
     for (i = 0; i < total_stages; i++) {
-	if (!strcmp(stages[i].argv[0], "cd")){
-	    
-	        if (stages[i].argc == 1){
-		    printf("cd: missing argument.\n");
-		    continue;
-		}
-		else if (stages[i].argc > 2) {
-		    printf("cd: too many arguments.\n");
-		    continue;
-		}   
-	        change_directory(stages[i].argv[1]);
-		continue;
-	    }
-	if ( i <  total_stages -1)
-	    pipe(next);
-	if (!(child = fork())) {
-	    dup2(old[READ], STDIN_FILENO);
-	    if (i != total_stages-1)
-		dup2(next[WRITE], STDOUT_FILENO);
-	    close(old[0]);
-	    close(old[1]);
-	    close(next[0]);
-	    close(next[1]);
-	    if (sigprocmask(SIG_SETMASK, &old_set, NULL))
-		perror("Sigunset");
-	    execvp(stages[i].argv[0], stages[i].argv);
-	    perror(stages[i].argv[0]);
-	    exit(EXIT_FAILURE);  
-	}
-	else {
-	    children++;
-	    close(old[0]);
-	    close(old[1]);
-	    old[0] = next[0];
-	    old[1] = next[1];
-	}
+        if (!strcmp(stages[i].argv[0], "cd")){
+            if (stages[i].argc == 1){
+                printf("cd: missing argument.\n");
+                continue;
+            }
+            else if (stages[i].argc > 2) {
+                printf("cd: too many arguments.\n");
+                continue;
+            }
+            change_directory(stages[i].argv[1]);
+            continue;
+        }
+        if ( i <  total_stages -1)
+            pipe(next);
+        if (!(child = fork())) {
+            /* child */
+            if (stages[i].has_input_redirection) {
+                int fd = open(stages[i].input, O_RDONLY);
+                if (fd < 0) {
+                    perror(stages[i].input);
+                    exit(EXIT_FAILURE);
+                }
+                dup2(old[READ], fd);
+                close(fd);
+            } else {
+                dup2(old[READ], STDIN_FILENO);
+            }
+
+            if (stages[i].has_output_redirection) {
+                int fd = open(stages[i].output, O_WRONLY | O_CREAT | O_TRUNC);
+                if (fd < 0) {
+                    perror(stages[i].output);
+                    exit(EXIT_FAILURE);
+                }
+                dup2(STDOUT_FILENO, fd);
+                close(fd);
+            } else if (i != total_stages-1) {
+                dup2(next[WRITE], STDOUT_FILENO);
+            }
+
+            close(old[0]);
+            close(old[1]);
+            close(next[0]);
+            close(next[1]);
+            if (sigprocmask(SIG_SETMASK, &old_set, NULL))
+                perror("Sigunset");
+            execvp(stages[i].argv[0], stages[i].argv);
+            perror(stages[i].argv[0]);
+            exit(EXIT_FAILURE);
+        }
+        else {
+            /* parent */
+            children++;
+            close(old[0]);
+            close(old[1]);
+            old[0] = next[0];
+            old[1] = next[1];
+        }
     }
     if (sigprocmask(SIG_SETMASK, &old_set, NULL))
-	perror("Sigunset");
+        perror("Sigunset");
     while (children--)
-	wait(NULL);
+        wait(NULL);
 }
