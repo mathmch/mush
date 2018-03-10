@@ -4,6 +4,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <signal.h>
+#include <string.h>
 #include "util.h"
 #include "stage.h"
 #include "parseline.h"
@@ -27,6 +28,7 @@ int main(int argc, char *argv[]){
 	if (command[0] == '\n')
 	    continue;
 	total_stages = parse_line(command, stages);
+	
 	if (total_stages == -1)
 	    continue;
 	else
@@ -67,6 +69,7 @@ void launch_pipes(int total_stages, struct stage stages[]){
     int old[2], next[2];
     pid_t child;
     int i;
+    int children = 0;
     sigemptyset(&new_set);
     sigaddset(&new_set, SIGINT);
     if (sigprocmask(SIG_BLOCK, &new_set, &old_set) < 0)
@@ -76,6 +79,19 @@ void launch_pipes(int total_stages, struct stage stages[]){
 	exit(EXIT_FAILURE);
     }
     for (i = 0; i < total_stages; i++) {
+	if (!strcmp(stages[i].argv[0], "cd")){
+	    
+	        if (stages[i].argc == 1){
+		    printf("cd: missing argument.\n");
+		    continue;
+		}
+		else if (stages[i].argc > 2) {
+		    printf("cd: too many arguments.\n");
+		    continue;
+		}   
+	        change_directory(stages[i].argv[1]);
+		continue;
+	    }
 	if ( i <  total_stages -1)
 	    pipe(next);
 	if (!(child = fork())) {
@@ -93,6 +109,7 @@ void launch_pipes(int total_stages, struct stage stages[]){
 	    exit(EXIT_FAILURE);  
 	}
 	else {
+	    children++;
 	    close(old[0]);
 	    close(old[1]);
 	    old[0] = next[0];
@@ -101,6 +118,6 @@ void launch_pipes(int total_stages, struct stage stages[]){
     }
     if (sigprocmask(SIG_SETMASK, &old_set, NULL))
 	perror("Sigunset");
-    while (total_stages--)
+    while (children--)
 	wait(NULL);
 }

@@ -11,7 +11,7 @@ all: mush
 mush: mush.o parseline.o stage.o util.o
 
 mush.o: mush.c
-
+	$(CC) $(CCFLAGS) -c -o mush.o mush.c
 parseline.o: parseline.c
 
 stage.o: stage.c
