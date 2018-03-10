@@ -20,23 +20,41 @@ void change_directory(char *path);
 void launch_pipes(int total_stages, struct stage stages[]);
 void telephone(int id);
 
+int should_print_prompt = 1;
+
 int main(int argc, char *argv[]){
     struct stage stages[MAX_PIPES + 1];
     char command[MAX_COMMAND_LENGTH];
+    FILE *file;
     int total_stages;
+
+    if (argc == 2) {
+        /* batch processing */
+        if ((file = fopen(argv[1], "r")) == NULL) {
+            perror(argv[1]);
+            exit(EXIT_FAILURE);
+        }
+    } else {
+        /* interactive */
+        file = stdin;
+    }
+
+    should_print_prompt = isatty(fileno(file)) && isatty(fileno(stdout));
     setup_env();
+
     while (1) {
-        printf("%s", PROMPT);
-        get_line(command);
+        if (should_print_prompt)
+            printf("%s", PROMPT);
+        get_line(command, file);
         if (command[0] == '\n')
             continue;
         total_stages = parse_line(command, stages);
-
         if (total_stages == -1)
             continue;
         else
             launch_pipes(total_stages, stages);
     }
+
     return 0;
 }
 
@@ -49,8 +67,9 @@ void setup_env(){
     sigaction(SIGINT, &sa, NULL);
 }
 
-void sigint_handler(int signum){
-    printf("\n%s", PROMPT);
+void sigint_handler(int signum) {
+    if (should_print_prompt)
+        printf("\n%s", PROMPT);
 }
 
 void change_directory(char *path){

@@ -36,14 +36,12 @@ int parse_line(char command[], struct stage stages[]) {
     return total_stages;
 }
 
-void get_line(char command[]) {
+void get_line(char command[], FILE *file) {
     #define SUCCESS 0
     errno = SUCCESS;
-    while (fgets(command, MAX_COMMAND_LENGTH*2, stdin) == NULL) {
-        if (errno == SUCCESS){
-            printf("^D\n");
+    while (fgets(command, MAX_COMMAND_LENGTH*2, file) == NULL) {
+        if (errno == SUCCESS)
             exit(EXIT_SUCCESS);
-        }
         if (errno != EINTR) {
             perror("fgets");
             exit(EXIT_FAILURE);

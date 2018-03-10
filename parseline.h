@@ -4,7 +4,7 @@
 
 
 int parse_line(char command[], struct stage stages[]);
-void get_line(char command[]);
+void get_line(char command[], FILE *file);
 void parse_stage(char *command, struct stage *stage,
                  int current_stage, int total_stages);
 void handle_invalid_redirection(int argc, char *argv[], int is_input);
