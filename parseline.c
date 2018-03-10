@@ -36,21 +36,25 @@ int parse_line(char command[], struct stage stages[]) {
     return total_stages;
 }
 
-void get_line(char command[], FILE *file) {
+int get_line(char command[], FILE *file) {
     #define SUCCESS 0
     errno = SUCCESS;
-    while (fgets(command, MAX_COMMAND_LENGTH*2, file) == NULL) {
-        if (errno == SUCCESS)
+    if (fgets(command, MAX_COMMAND_LENGTH*2, file) == NULL) {
+        if (errno == SUCCESS) {
+            putchar('\n');
             exit(EXIT_SUCCESS);
+        }
         if (errno != EINTR) {
             perror("fgets");
             exit(EXIT_FAILURE);
-        }	
+        }
+        return -1;
     }
     if (strlen(command) > MAX_COMMAND_LENGTH) {
         fprintf(stderr, "command too long\n");
         exit(EXIT_FAILURE);
     }
+    return 0;
 }
 
 void parse_stage(char *command, struct stage *stage,

@@ -20,12 +20,11 @@ void change_directory(char *path);
 void launch_pipes(int total_stages, struct stage stages[]);
 void telephone(int id);
 
-int should_print_prompt = 1;
-
 int main(int argc, char *argv[]){
     struct stage stages[MAX_PIPES + 1];
     char command[MAX_COMMAND_LENGTH];
     FILE *file;
+    int should_print_prompt;
     int total_stages;
 
     if (argc == 2) {
@@ -45,9 +44,10 @@ int main(int argc, char *argv[]){
     while (1) {
         if (should_print_prompt)
             printf("%s", PROMPT);
-        get_line(command, file);
-        if (command[0] == '\n')
+        if (get_line(command, file) == -1) {
+            putchar('\n');
             continue;
+        }
         total_stages = parse_line(command, stages);
         if (total_stages == -1)
             continue;
@@ -68,8 +68,7 @@ void setup_env(){
 }
 
 void sigint_handler(int signum) {
-    if (should_print_prompt)
-        printf("\n%s", PROMPT);
+    /* nothing */
 }
 
 void change_directory(char *path){
@@ -140,23 +139,23 @@ void launch_pipes(int total_stages, struct stage stages[]) {
                 dup2(next[WRITE], STDOUT_FILENO);
             }
 
-            close(old[0]);
-            close(old[1]);
-            close(next[0]);
-            close(next[1]);
+            close(old[READ]);
+            close(old[WRITE]);
+            close(next[READ]);
+            close(next[WRITE]);
+
             if (sigprocmask(SIG_SETMASK, &old_set, NULL))
                 perror("Sigunset");
             execvp(stages[i].argv[0], stages[i].argv);
             perror(stages[i].argv[0]);
             exit(EXIT_FAILURE);
-        }
-        else {
+        } else {
             /* parent */
             children++;
-            close(old[0]);
-            close(old[1]);
-            old[0] = next[0];
-            old[1] = next[1];
+            close(old[READ]);
+            close(old[WRITE]);
+            old[READ] = next[READ];
+            old[WRITE] = next[WRITE];
         }
     }
     if (sigprocmask(SIG_SETMASK, &old_set, NULL))
