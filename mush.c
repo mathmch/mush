@@ -65,7 +65,7 @@ void telephone(int id){
     printf("This is process %d\n", id);
 }
 
-void launch_pipes(int total_stages, struct stage stages[]){
+void launch_pipes(int total_stages, struct stage stages[]) {
     #define READ 0
     #define WRITE 1
     sigset_t new_set, old_set;
@@ -82,19 +82,18 @@ void launch_pipes(int total_stages, struct stage stages[]){
         exit(EXIT_FAILURE);
     }
     for (i = 0; i < total_stages; i++) {
-        if (!strcmp(stages[i].argv[0], "cd")){
-            if (stages[i].argc == 1){
+        if (!strcmp(stages[i].argv[0], "cd")) {
+            if (stages[i].argc == 1) {
                 printf("cd: missing argument.\n");
                 continue;
-            }
-            else if (stages[i].argc > 2) {
+            } else if (stages[i].argc > 2) {
                 printf("cd: too many arguments.\n");
                 continue;
             }
             change_directory(stages[i].argv[1]);
             continue;
         }
-        if ( i <  total_stages -1)
+        if (i < total_stages - 1)
             pipe(next);
         if (!(child = fork())) {
             /* child */
@@ -104,19 +103,19 @@ void launch_pipes(int total_stages, struct stage stages[]){
                     perror(stages[i].input);
                     exit(EXIT_FAILURE);
                 }
-                dup2(old[READ], fd);
+                dup2(fd, STDIN_FILENO);
                 close(fd);
             } else {
                 dup2(old[READ], STDIN_FILENO);
             }
 
             if (stages[i].has_output_redirection) {
-                int fd = open(stages[i].output, O_WRONLY | O_CREAT | O_TRUNC);
+                int fd = open(stages[i].output, O_WRONLY | O_CREAT | O_TRUNC, 0644);
                 if (fd < 0) {
                     perror(stages[i].output);
                     exit(EXIT_FAILURE);
                 }
-                dup2(STDOUT_FILENO, fd);
+                dup2(fd, STDOUT_FILENO);
                 close(fd);
             } else if (i != total_stages-1) {
                 dup2(next[WRITE], STDOUT_FILENO);
