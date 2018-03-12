@@ -39,6 +39,7 @@ int parse_line(char command[], struct stage stages[]) {
 
 int get_line(char command[], FILE *file) {
     #define SUCCESS 0
+    char c;
     errno = SUCCESS;
     if (fgets(command, MAX_COMMAND_LENGTH*2, file) == NULL) {
         if (errno == SUCCESS) {
@@ -52,7 +53,9 @@ int get_line(char command[], FILE *file) {
         return -1;
     }
     if (strlen(command) > MAX_COMMAND_LENGTH) {
-        fseek(file, 0, SEEK_END);
+        while ((c = getchar()) != EOF && c != '\n') { 
+		/* clears out the buffer*/
+	    }				    
         fprintf(stderr, "command too long");
         return -1;
     }
