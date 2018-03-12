@@ -95,9 +95,11 @@ void launch_pipes(int total_stages, struct stage stages[]) {
     sigaddset(&new_set, SIGINT);
     if (sigprocmask(SIG_BLOCK, &new_set, &old_set) < 0)
         perror("Sigmask");
-    if (pipe(old) < 0) {
-        perror("Pipe");
-        exit(EXIT_FAILURE);
+    if (total_stages > 1) {
+	if (pipe(old) < 0) {
+	    perror("Pipe");
+	    exit(EXIT_FAILURE);
+	}
     }
     for (i = 0; i < total_stages; i++) {
         if (!strcmp(stages[i].argv[0], "cd")) {
@@ -123,9 +125,14 @@ void launch_pipes(int total_stages, struct stage stages[]) {
                 }
                 dup2(fd, STDIN_FILENO);
                 close(fd);
-            } else {
+            } else if (total_stages > 1) {
                 dup2(old[READ], STDIN_FILENO);
             }
+	    
+	    if (total_stages > 1) { 
+		close(old[WRITE]);
+		close(old[READ]);
+	    }
 
             if (stages[i].has_output_redirection) {
                 int fd = open(stages[i].output, O_WRONLY | O_CREAT | O_TRUNC, 0644);
@@ -135,14 +142,14 @@ void launch_pipes(int total_stages, struct stage stages[]) {
                 }
                 dup2(fd, STDOUT_FILENO);
                 close(fd);
-            } else if (i != total_stages-1) {
+            } else if (i < total_stages-1) {
                 dup2(next[WRITE], STDOUT_FILENO);
             }
 
-            close(old[READ]);
-            close(old[WRITE]);
-            close(next[READ]);
-            close(next[WRITE]);
+	    if (i < total_stages -1) {
+		close(next[READ]);
+		close(next[WRITE]);
+	    }
 
             if (sigprocmask(SIG_SETMASK, &old_set, NULL))
                 perror("Sigunset");
@@ -152,10 +159,14 @@ void launch_pipes(int total_stages, struct stage stages[]) {
         } else {
             /* parent */
             children++;
-            close(old[READ]);
-            close(old[WRITE]);
-            old[READ] = next[READ];
-            old[WRITE] = next[WRITE];
+	    if (total_stages > 1) {
+		close(old[READ]);
+		close(old[WRITE]);
+		if (i < total_stages - 1) {
+		    old[READ] = next[READ];
+		    old[WRITE] = next[WRITE];
+		}
+	    }
         }
     }
     if (sigprocmask(SIG_SETMASK, &old_set, NULL))
@@ -163,3 +174,4 @@ void launch_pipes(int total_stages, struct stage stages[]) {
     while (children--)
         wait(NULL);
 }
+
