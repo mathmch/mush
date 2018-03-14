@@ -16,7 +16,8 @@ int parse_line(char command[], struct stage stages[]) {
     char *end;
 
     total_stages = count_occurrences(command, '|') + 1;
-
+    if ( command[0] == '\n')
+	return -1;
     if (total_stages > MAX_PIPES + 1) {
         fprintf(stderr, "pipeline too deep\n");
         return -1;
@@ -37,13 +38,14 @@ int parse_line(char command[], struct stage stages[]) {
     return total_stages;
 }
 
-int get_line(char command[], FILE *file) {
+int get_line(char command[], FILE *file, int should_print_prompt) {
     #define SUCCESS 0
     char c;
     errno = SUCCESS;
     if (fgets(command, MAX_COMMAND_LENGTH*2, file) == NULL) {
         if (errno == SUCCESS) {
-            putchar('\n');
+	    if (should_print_prompt)
+		putchar('\n');
             exit(EXIT_SUCCESS);
         }
         if (errno != EINTR) {
@@ -107,7 +109,7 @@ int parse_stage(char *command, struct stage *stage,
             argc++;
 
             if (argc > MAX_ARGUMENTS) {
-                fprintf(stderr, "%s: too many arguments", argv[0]);
+                fprintf(stderr, "%s: too many arguments\n", argv[0]);
                 return -1;
             }
         }

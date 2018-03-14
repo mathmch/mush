@@ -13,18 +13,19 @@
 #include "parseline.h"
 
 #define PROMPT "8-P "
-/* TODO: Deal with ^D ^D */
+
 void setup_env(void);
 void sigint_handler(int signum);
 void change_directory(char *path);
 void launch_pipes(int total_stages, struct stage stages[]);
 void telephone(int id);
 
+int should_print_prompt = 1;
+
 int main(int argc, char *argv[]){
     struct stage stages[MAX_PIPES + 1];
     char command[MAX_COMMAND_LENGTH];
     FILE *file;
-    int should_print_prompt;
     int total_stages;
 
     if (argc == 2) {
@@ -44,8 +45,7 @@ int main(int argc, char *argv[]){
     while (1) {
         if (should_print_prompt)
             printf("%s", PROMPT);
-        if (get_line(command, file) == -1) {
-            putchar('\n');
+        if (get_line(command, file, should_print_prompt) == -1) {
             continue;
         }
         total_stages = parse_line(command, stages);
@@ -68,7 +68,8 @@ void setup_env(){
 }
 
 void sigint_handler(int signum) {
-    /* nothing */
+    if (should_print_prompt)
+	putchar('\n');
 }
 
 void change_directory(char *path){
@@ -135,7 +136,8 @@ void launch_pipes(int total_stages, struct stage stages[]) {
 	    }
 
             if (stages[i].has_output_redirection) {
-                int fd = open(stages[i].output, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+                int fd = open(stages[i].output,
+			      O_WRONLY | O_CREAT | O_TRUNC, 0644);
                 if (fd < 0) {
                     perror(stages[i].output);
                     exit(EXIT_FAILURE);
